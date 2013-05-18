@@ -25,6 +25,9 @@
 //   token to get more results from the original query.
 ////////////////////////////////////////////////////////////////////////////////
 
+option java_package = "com.rethinkdb";
+option java_outer_classname = "QL2";
+
 // This enum contains the magic numbers for your version.  See **THE HIGH-LEVEL
 // VIEW** for what to do with it.
 message VersionDummy { // We need to wrap it like this for some
