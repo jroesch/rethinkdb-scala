@@ -6,9 +6,9 @@ import scala.collection.JavaConversions._
 /* im pretty sure there is a better place to put these implicits, look at 
  * scalaz */
 
-object Query {
-  trait JSON[A] // { def toJson(x: A): String; def fromJson(x: String): A } 
+trait JSON[A] // { def toJson(x: A): String; def fromJson(x: String): A }
 
+object Query {
   implicit object IntJSON extends JSON[Int]
 
   implicit object DoubleJSON extends JSON[Double]
@@ -21,9 +21,13 @@ object Query {
 }
 
 trait Query[T] {
-  import Query.JSON
+  val queryObject: Protocol.Query
 
-  def run(implicit conn: Connection) = ???
+  def run(implicit conn: Connection) = {
+    //conn.writeQuery(this)
+    "dummy result" /* read result from here and output back */
+  }
+
   //def insert(implicit ev: T =:= Table)
   //
 
@@ -43,8 +47,16 @@ trait Query[T] {
 
   type AssocPairs = Map[String, Protocol.Term]
 
-  def Query(tpe: Protocol.Query.QueryType, query: Protocol.Term, token: Long, globalOptArgs: AssocPairs) = {
+  def db(name: String)(implicit evidence: JSON[String]): (String, Protocol.Term) = {
+    import Protocol.Term.TermType
+    ("db", Term(TermType.DB, None, Term(TermType.DATUM, Some(Datum(name))) :: Nil))
+  }
 
+  /* Most Queries will have the type Start, good default */
+  def Query(query: Protocol.Term, token: Long, globalOptArgs: AssocPairs): Protocol.Query =
+    Query(Protocol.Query.QueryType.START, query, token, globalOptArgs)
+
+  def Query(tpe: Protocol.Query.QueryType, query: Protocol.Term, token: Long, globalOptArgs: AssocPairs): Protocol.Query = {
     val _query = Protocol.Query.newBuilder()
     _query.setType(tpe)
     _query.setQuery(query)
@@ -55,11 +67,11 @@ trait Query[T] {
       pair.setKey(k)
       pair.build
     }
-    _query.addAllGlobalOptargs(optargs)
+    _query.addAllGlobalOptargs(asJavaIterable(optargs))
     _query.build
   }
 
-  def Term(tpe: Protocol.Term.TermType, datum: Option[Protocol.Datum], args: Seq[Protocol.Term], optargs: AssocPairs = Map()) = {
+  def Term(tpe: Protocol.Term.TermType, datum: Option[Protocol.Datum], args: Seq[Protocol.Term] = Nil, optargs: AssocPairs = Map()) = {
     val term = Protocol.Term.newBuilder()
     term.setType(tpe)
     datum foreach { case d => term setDatum d }
