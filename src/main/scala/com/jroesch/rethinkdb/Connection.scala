@@ -1,6 +1,5 @@
 package com.jroesch.rethinkdb
 
-import java.io._
 import java.net._
 import com.rethinkdb.QL2.VersionDummy
 import scala.language.postfixOps
@@ -19,7 +18,13 @@ class Connection(address: String, port: Int, var db: String) {
     (i & 0xFF000000) >> 24 toByte
   )
 
-  def writeBytes(bytes: Array[Byte]) = out.write(bytes)
+  def writeBytes(bytes: Array[Byte]) { out.write(bytes) }
+
+  def writeQuery[T](query: Query[T]) {
+    val bytes = query.queryObject.toByteArray
+    writeBytes(ibytes(bytes.length))
+    writeBytes(bytes)
+  }
   
   //def reconnect() = {
   //VersionDummy.V0_1 
