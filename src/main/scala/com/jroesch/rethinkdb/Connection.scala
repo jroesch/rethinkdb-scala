@@ -11,8 +11,15 @@ class Connection(address: String, port: Int, var db: String) {
   val out = socket.getOutputStream
   val in = socket.getInputStream
 
+  private[this] var tokenNumber: Long = 1
+
   writeBytes(VersionDummy.Version.V0_1_VALUE)
 
+  def obtainToken() = {
+    val res = tokenNumber
+    tokenNumber += 1
+    res
+  }
   private implicit def intToBytes(i: Int): Array[Byte] = Array (
     (i & 0x000000FF)       toByte,
     (i & 0x0000FF00) >> 8  toByte,
