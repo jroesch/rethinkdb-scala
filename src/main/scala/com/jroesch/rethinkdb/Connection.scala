@@ -31,7 +31,7 @@ class Connection(address: String, port: Int, var db: String) {
     writeBytes(bytes)
   }
 
-  def readResponse = {
+  def readResponse() = {
     val size = new Array[Byte](4)
     in.read(size, 0, 4)
     val result = new Array[Byte](size)

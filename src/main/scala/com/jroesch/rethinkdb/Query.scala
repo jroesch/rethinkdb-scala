@@ -6,44 +6,23 @@ import scala.collection.JavaConversions._
 /* im pretty sure there is a better place to put these implicits, look at 
  * scalaz */
 
-trait JSON[A] // { def toJson(x: A): String; def fromJson(x: String): A }
+//trait JSON[A] // { def toJson(x: A): String; def fromJson(x: String): A }
 
-object Query {
-  implicit object IntJSON extends JSON[Int]
-
-  implicit object DoubleJSON extends JSON[Double]
-
-  implicit object StringJSON extends JSON[String]
-
-  implicit object ArrayJSON extends JSON[Array[_]] //I'm fucked here
-
-  implicit object MapJSON extends JSON[Map[_, _]]
-}
+object Query {}
 
 trait Query[T] {
-  val queryObject: Protocol.Query
+  val term: Protocol.Term
 
   def run(implicit conn: Connection) = {
-    //conn.writeQuery(this)
-    "dummy result" /* read result from here and output back */
+    //build query
+    val query = null
+    conn.writeQuery(query)
+    val response = conn.readResponse()
+    //handle response
   }
 
   //def insert(implicit ev: T =:= Table)
   //
-
-  def buildGlobalOptArgs(conn: Connection) = {
-    /* import Protocol.{ Datum => _, _ }
-    val pair = Query.AssocPair.newBuilder()
-    pair.setKey("db")
-    val term = Term.newBuilder()
-    term.setType(Term.TermType.DB)
-    val termArgs = Term.newBuilder()
-    termArgs.setType(Term.TermType.DATUM)
-    termArgs.setDatum(Datum(conn.db))
-    term.setArgs(termArgs.build)
-    pair.setValue(term.build)
-    pair.build */
-  }  
 
   type AssocPairs = Map[String, Protocol.Term]
 
