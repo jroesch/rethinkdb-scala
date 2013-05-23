@@ -21,12 +21,16 @@ package object rethinkdb {
   implicit object MapJSON extends JSON[Map[_, _]]
 
   val testConn = new Connection("localhost", 28015, "test")
-  def listDB = {
-    val builder = new Database {}
-    val db = builder.db("test")
-    val term = builder.Term(P.Term.TermType.DB_LIST, None)
-    val query = builder.Query(term, 1, Map() + db)
-    testConn.writeQuery(query)
-    testConn.readResponse
+
+  def dbCreate(name: String) = new Query[Database] {
+    val query: P.Term = Term(P.Term.TermType.DB_CREATE, Some(Datum(name)))
+  }
+
+  def dbDrop(name: String) = new Query[Database] {
+    val query = Term(P.Term.TermType.DB_DROP, Some(Datum(name)))
+  }
+
+  def dbList = new Query[Database] {
+      val query = Term(P.Term.TermType.DB_LIST, None)
   }
 }
