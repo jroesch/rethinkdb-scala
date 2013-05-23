@@ -2,29 +2,67 @@ package com.jroesch.rethinkdb
 
 import com.rethinkdb.{ QL2 => Protocol }
 import scala.collection.JavaConversions._
+import scala.language.implicitConversions
+import scala.language.postfixOps
+import json._
 
 /* im pretty sure there is a better place to put these implicits, look at 
  * scalaz */
 
 //trait JSON[A] // { def toJson(x: A): String; def fromJson(x: String): A }
 
-object Query {}
+object Query {
+  private[this] object queryBuilder extends Queries
 
-abstract class Query[T] {
+  implicit def intToDatum(i: Int) = queryBuilder.Datum(i)
+  implicit def doubleToDatum(d: Double) = queryBuilder.Datum(d)
+  implicit def strToDatum(s: String) = queryBuilder.Datum(s)
+  implicit def boolToDatum(b: Boolean) = queryBuilder.Datum(b)
+  implicit def NoneToDatum(n: Option[Nothing]): Protocol.Datum =
+    queryBuilder.Datum[Option[Nothing]](null)(implicitly[Datum[Option[Nothing]]])
+
+  implicit object DatumToJSON extends ToJSON[Protocol.Datum] {
+    def toJSON(x: Protocol.Datum): JSON = {
+       import Protocol.Datum.DatumType
+      x.getType match {
+        case DatumType.R_NULL =>
+          JSONNull
+        case DatumType.R_NUM =>
+          JSONNumber(x.getRNum)
+        case DatumType.R_BOOL =>
+          JSONBool(x.getRBool)
+        case DatumType.R_STR =>
+          JSONString(x.getRStr)
+        case DatumType.R_ARRAY =>
+          JSONArray(x getRArrayList() map { toJSON(_) } toArray)
+        case DatumType.R_OBJECT =>
+          val pairs = x.getRObjectList.map { pair =>
+            (pair.getKey, toJSON(pair.getVal))
+          }
+          JSONObject(Map(pairs: _*))
+      }
+    }
+  }
+}
+
+abstract class Query extends Queries {
   //type Result = R
 
   protected val query: Protocol.Term
 
-  def run[A](implicit conn: Connection)(implicit evidence: T =:= A) = {
+  def run[A](implicit conn: Connection)/* (implicit evidence: T =:= A) */ = {
     //build query
     conn writeQuery Query(query, conn.obtainToken(), Map() + Database(conn.db))
     val response = Protocol.Response.parseFrom(conn.readResponse())
     println(response)
+    response
   }
+}
 
+trait Queries {
   type AssocPairs = Map[String, Protocol.Term]
 
-  def Database(name: String)(implicit evidence: JSON[String]): (String, Protocol.Term) = {
+  def Database(name: String)(implicit evidence: Datum[String]): (String, Protocol.Term) = {
     import Protocol.Term.TermType
     ("db", Term(TermType.DB, None, Term(TermType.DATUM, Some(Datum(name))) :: Nil))
   }
@@ -63,7 +101,10 @@ abstract class Query[T] {
     term.build()
   }
 
-  def Datum[A: JSON](d: A) = {
+  implicit def datumToTerm(d: Protocol.Datum): Protocol.Term =
+    Term(Protocol.Term.TermType.DATUM, Some(d))
+
+  def Datum[A: Datum](d: A) = {
     import Protocol.Datum.DatumType
     val datum = Protocol.Datum.newBuilder()
     d match {
@@ -80,10 +121,13 @@ abstract class Query[T] {
       case s: String =>
         datum.setType(DatumType.R_STR)
         datum.setRStr(s)
-      case a: Array[_] => ???
-      case m: Map[_,_]   => ???
+      case a: Array[_] =>
+        datum.setType(DatumType.R_ARRAY)
+        datum.addAllRArray(asJavaIterable(a.asInstanceOf[Array[Protocol.Datum]]))
+      case m: Map[_, _] => ???
+      //datum.setType(DatumType.R_OBJECT)
+      //datum.addAllRObject(asJavaIterable(m.asInstanceOf[Map[String, Protocol.Datum]]))
     }
-
     datum.build
   }
 }
