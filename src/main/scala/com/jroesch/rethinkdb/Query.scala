@@ -10,23 +10,21 @@ import scala.collection.JavaConversions._
 
 object Query {}
 
-trait Query[T] {
-  val term: Protocol.Term
+abstract class Query[T] {
+  //type Result = R
 
-  def run(implicit conn: Connection) = {
+  protected val query: Protocol.Term
+
+  def run[A](implicit conn: Connection)(implicit evidence: T =:= A) = {
     //build query
-    val query = null
-    conn.writeQuery(query)
-    val response = conn.readResponse()
-    //handle response
+    conn writeQuery Query(query, conn.obtainToken(), Map() + Database(conn.db))
+    val response = Protocol.Response.parseFrom(conn.readResponse())
+    println(response)
   }
-
-  //def insert(implicit ev: T =:= Table)
-  //
 
   type AssocPairs = Map[String, Protocol.Term]
 
-  def db(name: String)(implicit evidence: JSON[String]): (String, Protocol.Term) = {
+  def Database(name: String)(implicit evidence: JSON[String]): (String, Protocol.Term) = {
     import Protocol.Term.TermType
     ("db", Term(TermType.DB, None, Term(TermType.DATUM, Some(Datum(name))) :: Nil))
   }
