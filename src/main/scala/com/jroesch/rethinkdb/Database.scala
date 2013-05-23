@@ -1,4 +1,10 @@
 package com.jroesch.rethinkdb
 
 /* Phantom Type for typing Queries */
-trait Database
+abstract class Database extends Query {
+  /* Sub-Queries on a Database */
+  def table = ???
+  def tableCreate = ???
+  def tableDrop = ???
+  def tableList = ???
+}
