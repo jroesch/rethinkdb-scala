@@ -1,5 +1,4 @@
 package com.jroesch.rethinkdb
 
-trait Database extends Query[Database] {
-    val queryObject = null
-}
+/* Phantom Type for typing Queries */
+trait Database
