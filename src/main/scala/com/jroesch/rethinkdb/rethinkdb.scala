@@ -21,15 +21,15 @@ package object rethinkdb {
 
   implicit val testConn = new Connection("localhost", 28015, "test")
 
-  def dbCreate(name: String) = new Query[Database] {
+  def dbCreate(name: String) = new Database {
     val query: Protocol.Term = Term(Protocol.Term.TermType.DB_CREATE, Some(Datum(name)))
   }
 
-  def dbDrop(name: String) = new Query[Database] {
+  def dbDrop(name: String) = new Database {
     val query = Term(Protocol.Term.TermType.DB_DROP, Some(Datum(name)))
   }
 
-  def dbList = new Query[Database] {
+  def dbList = new Database {
       val query = Term(Protocol.Term.TermType.DB_LIST, None)
   }
 
