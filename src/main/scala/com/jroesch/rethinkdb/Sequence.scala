@@ -1,6 +1,6 @@
 package com.jroesch.rethinkdb
 
-trait Sequence extends Query { //with Selection {
+trait Sequence extends Queries#Query { //with Selection {
   /* enable for comphrensions here */
   def map = ???
   def flatMap = concatMap

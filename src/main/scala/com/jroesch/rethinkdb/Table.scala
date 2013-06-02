@@ -1,6 +1,6 @@
 package com.jroesch.rethinkdb
 
-abstract class Table extends Query {
+abstract class Table extends Queries#Query {
   def indexCreate = ???
   def indexDrop = ???
   def indexList = ???
