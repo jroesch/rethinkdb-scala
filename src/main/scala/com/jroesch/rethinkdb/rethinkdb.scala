@@ -3,6 +3,8 @@ package com.jroesch
 import com.rethinkdb.{ QL2 => Protocol }
 import com.jroesch.rethinkdb.Query._
 import com.jroesch.rethinkdb.json._
+import scalaz._
+import shapeless._
 
 package object rethinkdb {
   /* extend the traits here */
@@ -21,15 +23,15 @@ package object rethinkdb {
 
   implicit val testConn = new Connection("localhost", 28015, "test")
 
-  def dbCreate(name: String) = new Database {
+  def dbCreate(name: String) = new Document {
     val query: Protocol.Term = Term(Protocol.Term.TermType.DB_CREATE, Some(Datum(name)))
   }
 
-  def dbDrop(name: String) = new Database {
+  def dbDrop(name: String) = new Document {
     val query = Term(Protocol.Term.TermType.DB_DROP, Some(Datum(name)))
   }
 
-  def dbList = new Database {
+  def dbList = new Document {
       val query = Term(Protocol.Term.TermType.DB_LIST, None)
   }
 

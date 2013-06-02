@@ -24,8 +24,8 @@ case class JSONString(s: String) extends JSON {
   override def toString = s.mkString("\"", "", "\"")
 }
 
-case class JSONArray(arr: Array[JSON]) extends JSON {
-  (arr map (_.toString)).mkString("[", ",", "]")
+case class JSONArray(toArray: Array[JSON]) extends JSON {
+  (toArray map (_.toString)).mkString("[", ",", "]")
 }
 case class JSONObject(obj: Map[String, JSON]) extends JSON {
   (obj map { case (k,v) => s"$k: $v" }).mkString("{", ",", "}")

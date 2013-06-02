@@ -43,6 +43,8 @@ object Query {
       }
     }
   }
+
+  implicit datumOps
 }
 
 abstract class Query extends Queries {
@@ -54,8 +56,17 @@ abstract class Query extends Queries {
     //build query
     conn writeQuery Query(query, conn.obtainToken(), Map() + Database(conn.db))
     val response = Protocol.Response.parseFrom(conn.readResponse())
-    println(response)
-    response
+    response.getType match {
+      case Protocol.Response.ResponseType.SUCESS_ATOM =>
+        val ToJSON = implicitly[ToJSON[Protocol.Datum]]
+        import ToJSON._
+
+        response.getResponseList.toList match {
+          case x :: Nil => toJSON(x)
+          case xs  => toJSON(xs map toJSON(_))
+        }
+      case _ => ???
+    }
   }
 }
 
