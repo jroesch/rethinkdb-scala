@@ -10,9 +10,8 @@ import json._
  * scalaz */
 
 //trait JSON[A] // { def toJson(x: A): String; def fromJson(x: String): A }
-
-trait Queries {
-  type AssocPairs = Map[String, Protocol.Term]
+object Query {
+  private[this] object queryBuilder extends QueryBuilder
 
   implicit def intToDatum(i: Int) = queryBuilder.Datum(i)
   implicit def doubleToDatum(d: Double) = queryBuilder.Datum(d)
@@ -44,29 +43,32 @@ trait Queries {
     }
   }
 
-  implicit class DatumOps(val datum: Protocol.Datum) extends AnyVal {
-    def toJSON(implicit json: ToJSON[Protocol.Datum]) = json.toJSON(datum)
+  class DatumOps[A <% Protocol.Datum](datum: Protocol.Datum) {
+    def toJSON(implicit json: ToJSON[Protocol.Datum]): JSON= json.toJSON(datum)
   }
+}
 
-  abstract class Query {
-    //type Result = R
+abstract class Query extends QueryBuilder {
+  //type Result = R
+  protected val query: Protocol.Term
 
-    protected val query: Protocol.Term
-
-    def run[A](implicit conn: Connection)/* (implicit evidence: T =:= A) */ = {
-      //build query
-      conn writeQuery Query(query, conn.obtainToken(), Map() + Database(conn.db))
-      val response = Protocol.Response.parseFrom(conn.readResponse())
-      response.getType match {
-        case Protocol.Response.ResponseType.SUCCESS_ATOM =>
-          response.getResponseList.toList match {
-            case x :: Nil => x.toJSON
-            case xs  => JSONArray(xs map { _.toJSON } toArray)
-          }
-        case _ => ???
-      }
+  def run[A](implicit conn: Connection)/* (implicit evidence: T =:= A) */ = {
+    //build query
+    conn writeQuery Query(query, conn.obtainToken(), Map() + Database(conn.db))
+    val response = Protocol.Response.parseFrom(connc.readResponse())
+    response.getType match {
+      case Protocol.Response.ResponseType.SUCCESS_ATOM =>
+        response.getResponseList.toList match {
+          case x :: Nil => x.toJSON
+          case xs  => JSONArray(xs map { _.toJSON } toArray)
+        }
+      case _ => ???
     }
   }
+}
+
+trait QueryBuilder {
+  type AssocPairs = Map[String, Protocol.Term]
 
   def Database(name: String)(implicit evidence: Datum[String]): (String, Protocol.Term) = {
     import Protocol.Term.TermType

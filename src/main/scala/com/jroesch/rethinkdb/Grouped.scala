@@ -1,6 +1,6 @@
 package com.jroesch.rethinkdb
 
-abstract class Grouped extends Queries#Query {
+abstract class Grouped extends Query {
   def count = ???
   def sum = ???
   def avg = ???

@@ -1,6 +1,6 @@
 package com.jroesch.rethinkdb
 
-abstract class Document extends Queries#Query {
+abstract class Document extends Query {
   def pluck = ???
   def without = ???
   def merge = ???
