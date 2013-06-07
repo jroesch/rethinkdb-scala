@@ -20,10 +20,16 @@ object Query {
   implicit def boolToDatum(b: Boolean) = queryBuilder.Datum(b)
   implicit def NoneToDatum(n: Option[Nothing]): Protocol.Datum =
     queryBuilder.Datum[Option[Nothing]](null)(implicitly[Datum[Option[Nothing]]])
+}
+
+abstract class Query extends Queries {
+  //type Result = R
+
+  protected val query: Protocol.Term
 
   implicit object DatumToJSON extends ToJSON[Protocol.Datum] {
     def toJSON(x: Protocol.Datum): JSON = {
-       import Protocol.Datum.DatumType
+      import Protocol.Datum.DatumType
       x.getType match {
         case DatumType.R_NULL =>
           JSONNull
@@ -44,26 +50,23 @@ object Query {
     }
   }
 
-  implicit datumOps
-}
+  case class DatumOps(datum: Protocol.Datum) {
+    def toJSON(implicit json: ToJSON[Protocol.Datum]): JSON = json.toJSON(datum)
+  }
 
-abstract class Query extends Queries {
-  //type Result = R
-
-  protected val query: Protocol.Term
+  implicit def datumToDatumOps(datum: Protocol.Datum): DatumOps = DatumOps(datum)
+  implicit def arrayToJSON(array: Array[JSON]): JSON = JSONArray(array)
+  implicit def mapToJSON(map: Map[String, JSON]): JSON = JSONObject(map)
 
   def run[A](implicit conn: Connection)/* (implicit evidence: T =:= A) */ = {
     //build query
     conn writeQuery Query(query, conn.obtainToken(), Map() + Database(conn.db))
     val response = Protocol.Response.parseFrom(conn.readResponse())
     response.getType match {
-      case Protocol.Response.ResponseType.SUCESS_ATOM =>
-        val ToJSON = implicitly[ToJSON[Protocol.Datum]]
-        import ToJSON._
-
+      case Protocol.Response.ResponseType.SUCCESS_ATOM =>
         response.getResponseList.toList match {
-          case x :: Nil => toJSON(x)
-          case xs  => toJSON(xs map toJSON(_))
+          case x :: Nil => x.toJSON
+          case xs  => xs map { _.toJSON }
         }
       case _ => ???
     }
