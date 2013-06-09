@@ -6,63 +6,25 @@ import scala.language.implicitConversions
 import scala.language.postfixOps
 import json._
 
-/* im pretty sure there is a better place to put these implicits, look at 
- * scalaz */
-
-//trait JSON[A] // { def toJson(x: A): String; def fromJson(x: String): A }
-object Query {
-  private[this] object queryBuilder extends QueryBuilder
-
-  implicit def intToDatum(i: Int) = queryBuilder.Datum(i)
-  implicit def doubleToDatum(d: Double) = queryBuilder.Datum(d)
-  implicit def strToDatum(s: String) = queryBuilder.Datum(s)
-  implicit def boolToDatum(b: Boolean) = queryBuilder.Datum(b)
-  implicit def NoneToDatum(n: Option[Nothing]): Protocol.Datum =
-    queryBuilder.Datum[Option[Nothing]](null)(implicitly[Datum[Option[Nothing]]])
-
-  implicit object DatumToJSON extends ToJSON[Protocol.Datum] {
-    def toJSON(x: Protocol.Datum): JSON = {
-      import Protocol.Datum.DatumType
-      x.getType match {
-        case DatumType.R_NULL =>
-          JSONNull
-        case DatumType.R_NUM =>
-          JSONNumber(x.getRNum)
-        case DatumType.R_BOOL =>
-          JSONBool(x.getRBool)
-        case DatumType.R_STR =>
-          JSONString(x.getRStr)
-        case DatumType.R_ARRAY =>
-          JSONArray((x getRArrayList() map _.toJSON).toArray)
-        case DatumType.R_OBJECT =>
-          val pairs = x.getRObjectList.map { pair =>
-            (pair.getKey, pair.getVal.toJSON)
-          }
-          JSONObject(Map(pairs: _*))
-      }
-    }
-  }
-
-  class DatumOps[A <% Protocol.Datum](datum: Protocol.Datum) {
-    def toJSON(implicit json: ToJSON[Protocol.Datum]): JSON= json.toJSON(datum)
-  }
-}
-
 abstract class Query extends QueryBuilder {
   //type Result = R
+  protected val database: Option[String] = None
   protected val query: Protocol.Term
 
   def run[A](implicit conn: Connection)/* (implicit evidence: T =:= A) */ = {
-    //build query
-    conn writeQuery Query(query, conn.obtainToken(), Map() + Database(conn.db))
-    val response = Protocol.Response.parseFrom(connc.readResponse())
+    /* val db = database match {
+      case Some(dbname) => Database(dbname)
+      case None => Database(conn.db)
+    } */
+    conn writeQuery Query(query, conn.obtainToken(), Map() + db)
+    val response = Protocol.Response.parseFrom(conn.readResponse())
     response.getType match {
       case Protocol.Response.ResponseType.SUCCESS_ATOM =>
-        response.getResponseList.toList match {
+        response.getResponseList8.toList match {
           case x :: Nil => x.toJSON
           case xs  => JSONArray(xs map { _.toJSON } toArray)
         }
-      case _ => ???
+      case _ => response
     }
   }
 }

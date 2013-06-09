@@ -25,10 +25,10 @@ case class JSONString(s: String) extends JSON {
 }
 
 case class JSONArray(toArray: Array[JSON]) extends JSON {
-  (toArray map (_.toString)).mkString("[", ",", "]")
+  override def toString = (toArray map (_.toString)).mkString("[", ",", "]")
 }
 case class JSONObject(obj: Map[String, JSON]) extends JSON {
-  (obj map { case (k,v) => s"$k: $v" }).mkString("{", ",", "}")
+  override def toString = (obj map { case (k,v) => s"$k: $v" }).mkString("{", ",", "}")
 }
 /* Support for Aeson style JSON encoding/decoding at some point, these two type classes
   respresent our behavior */
