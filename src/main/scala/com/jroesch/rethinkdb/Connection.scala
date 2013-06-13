@@ -28,7 +28,7 @@ class Connection(address: String, port: Int, var db: String) {
   )
 
   private implicit def bytesToInt(a: Array[Byte]): Int =
-    (a(3) << 24) + (a(2) << 16) + (a(1) << 8) + a(0)
+    (a(3) & 0xFF << 24) + (a(2) & 0xFF << 16) + (a(1) & 0xFF << 8) + (a(0) & 0xFF)
 
   def writeBytes(bytes: Array[Byte]) { out.write(bytes) }
 
@@ -41,6 +41,7 @@ class Connection(address: String, port: Int, var db: String) {
   def readResponse() = {
     val size = new Array[Byte](4)
     in.read(size, 0, 4)
+    println(bytesToInt(size))
     val result = new Array[Byte](size)
     in.read(result, 0, size)
     result
