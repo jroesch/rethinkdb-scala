@@ -11,7 +11,7 @@ The documentation, testing and code is still in progress.
 
 ```scala
 import com.jroesch.{ rethinkdb => r }
-import local._
+import r.local._
 
 r.table("users").run
 ```
