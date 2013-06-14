@@ -18,17 +18,19 @@ abstract class Query extends QueryBuilder {
       case None => Database(conn.db)
     }*/
 
-    val json = implicitly[ToJSON[Protocol.Datum]]
     //println(query)
     conn writeQuery Query(query, conn.obtainToken(), Map() + (db -> Database(db)))
     val response = Protocol.Response.parseFrom(conn.readResponse())
     response.getType match {
       case Protocol.Response.ResponseType.SUCCESS_ATOM =>
         response.getResponseList.toList match {
-          case x :: Nil => toJSON(x)
-          case xs  => JSONArray(xs map { toJSON(x) } toArray)
+          case x :: Nil => DatumToJSON.toJSON(x)
+          case xs  => JSONArray(xs map { DatumToJSON.toJSON(_) } toArray)
         }
-      case _ => error("not yet supported")
+      case Protocol.Response.ResponseType.SUCCESS_SEQUENCE =>
+        val results = response.getResponseList map { DatumToJSON.toJSON(_) }
+        JSONArray(results.toArray)
+      case _ => { println(response); error("not yet supported") }
     }
   }
 }
@@ -50,7 +52,7 @@ trait QueryBuilder {
         case DatumType.R_STR =>
           JSONString(x.getRStr)
         case DatumType.R_ARRAY =>
-          JSONArray((x getRArrayList() map { _.toJSON }).toArray)
+          JSONArray((x getRArrayList() map { toJSON(_) }).toArray)
         case DatumType.R_OBJECT =>
           val pairs = x.getRObjectList.map { pair =>
             (pair.getKey, toJSON(pair.getVal))
