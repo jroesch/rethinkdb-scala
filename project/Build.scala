@@ -10,7 +10,7 @@ object RethinkDBBuild extends Build {
     settings = Defaults.defaultSettings ++ Seq(
       organization := "com.jroesch",
       version      := "0.0.1-ALPHA",
-      scalaVersion := "2.10.1",
+      scalaVersion := "2.10.2",
 
       scalacOptions := Seq(
         "-feature",
@@ -32,7 +32,7 @@ object RethinkDBBuild extends Build {
       ), 
 
       libraryDependencies ++= Seq(
-        "com.chuusai" %% "shapeless" % "1.2.4",
+        "com.chuusai" % "shapeless" % "2.0.0-SNAPSHOT" cross CrossVersion.full,
         "org.scalaz" %% "scalaz-core" % "7.0.0",
         "com.google.protobuf" % "protobuf-java" % "2.5.0",
         "org.specs2" %% "specs2" % "2.0-RC2" % "test"
