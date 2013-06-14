@@ -10,7 +10,7 @@ abstract class Query extends QueryBuilder {
   //type Result = R
   //type Info = { val dbName: Option[String] }
   //protected val info: Info
-  protected val query: Protocol.Term
+  protected val term: Protocol.Term
 
   def run[A](implicit conn: Connection): JSON = {
     val db = conn.db; /* database match {
@@ -19,7 +19,7 @@ abstract class Query extends QueryBuilder {
     }*/
 
     //println(query)
-    conn writeQuery Query(query, conn.obtainToken(), Map() + (db -> Database(db)))
+    conn writeQuery Query(term, conn.obtainToken(), Map() + (db -> Database(db)))
     val response = Protocol.Response.parseFrom(conn.readResponse())
     response.getType match {
       case Protocol.Response.ResponseType.SUCCESS_ATOM =>
@@ -121,6 +121,8 @@ trait QueryBuilder {
     term.addAllOptargs(asJavaIterable(oargs))
     term.build()
   }
+
+  def DatumTerm(json: JSON) = datumToTerm(Datum(json))
 
   implicit def datumToTerm(d: Protocol.Datum): Protocol.Term =
     Term(Protocol.Term.TermType.DATUM, Some(d))

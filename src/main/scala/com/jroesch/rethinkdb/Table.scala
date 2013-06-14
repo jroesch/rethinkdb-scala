@@ -2,19 +2,20 @@ package com.jroesch.rethinkdb
 
 import json._
 import com.rethinkdb.{ QL2 => Protocol }
+import rexp._
 
-abstract class Table extends Query {
+abstract class Table extends Query with Sequence {
   def indexCreate = ???
   def indexDrop = ???
   def indexList = ???
-  def insert(obj: JSON)/* (opts: JSON = ) */ = query match {
+  def insert(obj: JSON)/* (opts: JSON = ) */ = term match {
     case outerQ =>
       val insertee = obj match {
         case JSONObject(map) => mkObject(map)
         case JSONArray(array) => mkArray(array)
       }
       new Document {
-        val query = Term(Protocol.Term.TermType.INSERT, None, outerQ :: insertee :: Nil)
+        val term = Term(Protocol.Term.TermType.INSERT, None, outerQ :: insertee :: Nil)
       }
   }
 
@@ -22,9 +23,9 @@ abstract class Table extends Query {
   def replace = ???
   def delete = ???
 
-  def get(name: String) = query match {
+  def get(name: String) = term match {
     case outerQ => new Document {
-      val query = Term(Protocol.Term.TermType.GET, None, outerQ :: Nil)
+      val term = Term(Protocol.Term.TermType.GET, None, outerQ :: Nil)
     }
   }
 
@@ -32,7 +33,10 @@ abstract class Table extends Query {
   def between(lowerKey: JSON, upperKey: JSON, index: Option[String] = None) = ???
   def filter = ???
 
-  def innerJoin = ???
+  def innerJoin(
+      otherSeq: Sequence,
+      pred: (ReQLExp[RObject], ReQLExp[RObject]) => ReQLExp[RBool]): Sequence = ???
+
   def outerJoin = ???
   def eqJoin    = ???
 }

@@ -4,9 +4,9 @@ import com.rethinkdb.{ QL2 => Protocol }
 /* Phantom Type for typing Queries */
 abstract class Database extends Query {
   /* Sub-Queries on a Database */
-  def table(name: String) = query match {
+  def table(name: String) = term match {
     case outerQ => new Table {
-      val query = Term(Protocol.Term.TermType.TABLE, None, List(outerQ, Datum(name)))
+      val term = Term(Protocol.Term.TermType.TABLE, None, List(outerQ, Datum(name)))
     }
   }
 
@@ -14,21 +14,21 @@ abstract class Database extends Query {
                   primaryKey: Option[String] = None,
                   hardDurability: Option[Boolean] = None,
                   cacheSize: Option[Int] = None,
-                  datacenter: Option[String] = None) = query match {
+                  datacenter: Option[String] = None) = term match {
     case outerQ => new Table {
-      val query = Term(Protocol.Term.TermType.TABLE_CREATE, None, List(outerQ, Datum(tableName)))
+      val term = Term(Protocol.Term.TermType.TABLE_CREATE, None, List(outerQ, Datum(tableName)))
     }
   }
 
-  def tableDrop = query match {
+  def tableDrop = term match {
     case outerQ => new Document {
-      val query = Term(Protocol.Term.TermType.TABLE_DROP, None, outerQ :: Nil)
+      val term = Term(Protocol.Term.TermType.TABLE_DROP, None, outerQ :: Nil)
     }
   }
 
-  def tableList = query match {
+  def tableList = term match {
     case outerQ => new Sequence {
-      val query = Term(Protocol.Term.TermType.TABLE_LIST, None, outerQ :: Nil)
+      val term = Term(Protocol.Term.TermType.TABLE_LIST, None, outerQ :: Nil)
     }
   }
 }

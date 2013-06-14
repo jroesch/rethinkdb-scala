@@ -2,12 +2,11 @@ package com.jroesch
 
 import com.rethinkdb.{ QL2 => Protocol }
 import com.jroesch.rethinkdb.json._
+import com.jroesch.rethinkdb.rexp._
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
-import scalaz._
-import shapeless._
 
-package object rethinkdb {
+package object rethinkdb extends ReQLExp.DSL {
   def error(msg: String) = throw new Exception(msg)
 
   /** Value level implicit conversions for the DSL */
@@ -19,6 +18,7 @@ package object rethinkdb {
 
   /** Function for building Objects from pairs. */
   implicit def obj(kvs: (String, JSON)*) = JSONObject(kvs.toMap)
+
   /** Function for building Array from values. */
   implicit def array(values: JSON*) = JSONArray(values.toArray)
 
@@ -34,22 +34,29 @@ package object rethinkdb {
   }
 
   def dbCreate(name: String) = new Document {
-    val query: Protocol.Term = Term(Protocol.Term.TermType.DB_CREATE, None, Datum(name) :: Nil)
+    val term: Protocol.Term = Term(Protocol.Term.TermType.DB_CREATE, None, Datum(name) :: Nil)
   }
 
   def dbDrop(name: String) = new Document {
-    val query = Term(Protocol.Term.TermType.DB_DROP, Some(Datum(name)))
+    val term = Term(Protocol.Term.TermType.DB_DROP, Some(Datum(name)))
   }
 
   def dbList = new Document {
-    val query = Term(Protocol.Term.TermType.DB_LIST, None)
+    val term = Term(Protocol.Term.TermType.DB_LIST, None)
   }
 
   def table(name: String, opt: JSONObject = null): Table = new Table {
-    val query = Term(Protocol.Term.TermType.TABLE, None, Datum(name) :: Nil)
+    val term = Term(Protocol.Term.TermType.TABLE, None, Datum(name) :: Nil)
   }
 
   def db(name: String): Database = new Database {
-    val query = Database(name)
+    val term = Database(name)
   }
+
+  /* r.count, r.sum shortcuts */
+  def count = ???
+  def sum = ???
+  def avg = ???
+
+  object expr extends ReQLPoly
 }
