@@ -28,7 +28,7 @@ class Connection(address: String, port: Int, var db: String) {
   )
 
   private implicit def bytesToInt(a: Array[Byte]): Int =
-    (a(3) & 0xFF << 24) + (a(2) & 0xFF << 16) + (a(1) & 0xFF << 8) + (a(0) & 0xFF)
+    ((a(3) & 0xFF) << 24) + ((a(2) & 0xFF) << 16) + ((a(1) & 0xFF) << 8) + (a(0) & 0xFF)
 
   def writeBytes(bytes: Array[Byte]) { out.write(bytes) }
 
