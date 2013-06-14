@@ -26,7 +26,12 @@ package object rethinkdb {
     def fromJSON(implicit json: FromJSON[Protocol.Datum]): Protocol.Datum = json.parseJSON(value)
   }
 
-  implicit val testConn = new Connection("localhost", 28015, "test")
+  /** Exposes needed implicits for using the API locally. Allowing REPL style interaction with RethinkDB from the
+    * Scala console.
+    */
+  object local {
+    implicit val conn = new Connection("localhost", 28015, "test")
+  }
 
   def dbCreate(name: String) = new Document {
     val query: Protocol.Term = Term(Protocol.Term.TermType.DB_CREATE, None, Datum(name) :: Nil)
