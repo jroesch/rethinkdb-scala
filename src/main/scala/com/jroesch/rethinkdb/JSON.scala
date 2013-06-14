@@ -1,9 +1,9 @@
 package com.jroesch.rethinkdb.json
 
-/* Let's borrow some existing Scala infastructure to get to MVP */
 import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.json.Lexer
+import shapeless._
 
 /** A type representing a JSON value. */
 sealed abstract class JSON
@@ -25,22 +25,14 @@ case class JSONString(s: String) extends JSON {
 }
 
 case class JSONArray(toArray: Array[JSON]) extends JSON {
-  override def toString = (toArray map (_.toString)).mkString("[", ",", "]")
-}
-case class JSONObject(obj: Map[String, JSON]) extends JSON {
-  override def toString = (obj map { case (k,v) => s"$k: $v" }).mkString("{", ",", "}")
-}
-/* Support for Aeson style JSON encoding/decoding at some point, these two type classes
-  respresent our behavior */
-trait ToJSON[A] {
-  def toJSON(x: A): JSON
+  override def toString = (toArray map (_.toString)).mkString("[", ", ", "]")
 }
 
-trait FromJSON[A] {
-   def parseJSON(x: JSON): A
+case class JSONObject(toMap: Map[String, JSON]) extends JSON {
+  override def toString = (toMap map { case (k,v) => s"$k: $v" }).mkString("{ ", ", ", " }")
 }
 
-/* A parser for converting from JSON to Scala types */
+/** A parser for converting from JSON in string form to the JSON value type */
 object JSON extends StdTokenParsers with ImplicitConversions {
   type Tokens = Lexer
   val lexical = new Tokens
@@ -79,6 +71,72 @@ object JSON extends StdTokenParsers with ImplicitConversions {
       case _ => None
     } */
 }
+
+/** A type class for converting from a type A to the JSON type */
+trait ToJSON[A] {
+  def toJSON(x: A): JSON
+}
+
+/** A type class for converting from the JSON type to a type A */
+trait FromJSON[A] {
+  def parseJSON(x: JSON): A
+}
+
+object ToJSONInstances {
+  implicit object NoneToJSON extends ToJSON[Option[Nothing]] {
+    def toJSON(none: Option[Nothing]) = JSONNull
+  }
+  implicit object BoolToJSON extends ToJSON[Boolean] {
+    def toJSON(bool: Boolean) = JSONBool(bool)
+  }
+
+  implicit object ByteToJSON extends ToJSON[Byte] {
+    def toJSON(byte: Byte) = JSONNumber(byte)
+  }
+
+  implicit object ShortToJSON extends ToJSON[Short] {
+    def toJSON(short: Short) = JSONNumber(short)
+  }
+
+  implicit object IntToJSON extends ToJSON[Int] {
+    def toJSON(int: Int) = JSONNumber(int)
+  }
+
+  implicit object LongToJSON extends ToJSON[Long] {
+    def toJSON(long: Long) = JSONNumber(long)
+  }
+
+  implicit object BigIntToJSON extends ToJSON[BigInt] {
+    def toJSON(bigInt: BigInt) = JSONNumber(bigInt.toDouble)
+  }
+
+  implicit object FloatToJSON extends ToJSON[Float] {
+    def toJSON(float: Float) = JSONNumber(float)
+  }
+
+  implicit object DoubleToJSON extends ToJSON[Double] {
+    def toJSON(double: Double) = JSONNumber(double)
+  }
+
+  implicit object StringToJSON extends ToJSON[String] {
+    def toJSON(str: String) = JSONString(str)
+  }
+
+  implicit def SeqToJSON[A: ToJSON] = new ToJSON[Seq[A]] {
+    def toJSON(seq: Seq[A]) = {
+      val A = implicitly[ToJSON[A]]
+      val values = seq map { A.toJSON(_) }
+      JSONArray(values.toArray)
+    }
+  }
+
+  implicit object SeqJSONToJSON extends ToJSON[Seq[JSON]] {
+    def toJSON(seq: Seq[JSON]) = JSONArray(seq.toArray)
+  }
+}
+
+
+
 
 
 
