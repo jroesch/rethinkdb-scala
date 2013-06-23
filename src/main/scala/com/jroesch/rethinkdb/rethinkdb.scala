@@ -6,7 +6,7 @@ import com.jroesch.rethinkdb.rexp._
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 
-package object rethinkdb extends ReQLExp.DSL {
+package object rethinkdb extends ReQLExp.DSL with QueryBuilder {
   def error(msg: String) = throw new Exception(msg)
 
   /** Value level implicit conversions for the DSL */
@@ -54,9 +54,9 @@ package object rethinkdb extends ReQLExp.DSL {
   }
 
   /* r.count, r.sum shortcuts */
-  def count = ???
-  def sum = ???
-  def avg = ???
+  def count = mkObject(Map("COUNT" -> true))
+  def sum(field: String) = mkObject(Map("SUM" -> field))
+  def avg(field: String) = mkObject(Map("AVG" -> field))
 
   object expr extends ReQLPoly
 }
