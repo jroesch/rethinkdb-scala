@@ -4,7 +4,7 @@ import com.rethinkdb.{ QL2 => Protocol }
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 import scala.language.postfixOps
-import json._
+import com.jroesch.rethinkdb.json._
 
 abstract class Query extends QueryBuilder {
   //type Result = R
@@ -30,6 +30,11 @@ abstract class Query extends QueryBuilder {
       case Protocol.Response.ResponseType.SUCCESS_SEQUENCE =>
         val results = response.getResponseList map { DatumToJSON.toJSON(_) }
         JSONArray(results.toArray)
+      case Protocol.Response.ResponseType.CLIENT_ERROR => ???
+      case Protocol.Response.ResponseType.COMPILE_ERROR => ???
+      case Protocol.Response.ResponseType.RUNTIME_ERROR => ???
+        val errorMsg = DatumToJSON.toJSON(response.getResponseList.toList.head).asInstanceOf[JSONString]
+        throw new errors.RqlRuntimeError(errorMsg.s)
       case _ => { println(response); error("not yet supported") }
     }
   }
@@ -98,7 +103,12 @@ trait QueryBuilder {
   def mkTermPair(kv: (String, JSON)) = {
     val pair = Protocol.Term.AssocPair.newBuilder()
     pair.setKey(kv._1)
-    pair.setVal(Datum(kv._2))
+    val datum = kv._2 match {
+      case JSONObject(map) => mkObject(map)
+      case JSONArray(seq)  => mkArray(seq)
+      case other           => DatumTerm(other)
+    }
+    pair.setVal(datum)
     pair.build()
   }
 
