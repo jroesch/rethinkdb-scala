@@ -41,8 +41,7 @@ package object rexp {
     }
   }
 
-  trait ReQLPoly extends Poly1 {
-    object qb extends QueryBuilder
+  trait ReQLPoly extends Poly1 with QueryBuilder {
 
     /* null values ? */
 
@@ -52,9 +51,9 @@ package object rexp {
 
     /* Numbers */
     implicit def caseInt =
-      at[Int](i => new ReQLExp[RNumber](qb.DatumTerm(i)))
+      at[Int](i => new ReQLExp[RNumber](DatumTerm(i)))
     implicit def caseDouble =
-      at[Double](d => new ReQLExp[RNumber](qb.DatumTerm(d)))
+      at[Double](d => new ReQLExp[RNumber](DatumTerm(d)))
     /* implicit def caseJSONNumber = at[JSONNumber](x => x match {
       case JSONNumber(d) =>
         new ReQLExp[RNumber](qb.DatumTerm(d))
@@ -62,7 +61,7 @@ package object rexp {
 
     /* Strings */
     implicit def caseString =
-      at[String](s => new ReQLExp[RString](qb.DatumTerm(s)))
+      at[String](s => new ReQLExp[RString](DatumTerm(s)))
 
     implicit def caseJSONString = at[JSONString](s => ???)
 
