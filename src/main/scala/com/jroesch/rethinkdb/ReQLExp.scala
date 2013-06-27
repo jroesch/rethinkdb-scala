@@ -67,9 +67,9 @@ object rexp {
   }
 
   /** A expression language for building first class functions for ReQL queries. */
-  class ReQLExp[A <: RValue](val term: Protocol.Term) extends Query {
+  class ReQLExp[+A <: RValue](val term: Protocol.Term) extends Query {
 
-    def apply(key: ReQLExp[RString])(implicit ev: A =:= RObject): ReQLExp[RValue] = {
+    def apply(key: ReQLExp[RString]): ReQLExp[RValue] = {
       new ReQLExp[RValue](Term(Protocol.Term.TermType.GETATTR, None, term :: key.term :: Nil))
     }
 
@@ -85,10 +85,11 @@ object rexp {
       new ReQLExp[RValue](Term(Protocol.Term.TermType.MUL, None, term :: x.term :: Nil))
     }
 
-    def /(x: ReQLExp[A])(implicit ev: A =:= RNumber): ReQLExp[RNumber] = ???
-    def %(x: ReQLExp[A])(implicit ev: A =:= RNumber): ReQLExp[RNumber] = ???
-    def &(x: ReQLExp[A])(implicit ev: A =:= RBool): ReQLExp[RBool] = ???
-    def |(x: ReQLExp[A])(implicit ev: A =:= RBool): ReQLExp[RBool] = ???
+    /* Hopefully constraint these more later */
+    def /(x: ReQLExp[RValue]): ReQLExp[RNumber] = ???
+    def %(x: ReQLExp[RValue]): ReQLExp[RNumber] = ???
+    def &(x: ReQLExp[RValue]): ReQLExp[RBool] = ???
+    def |(x: ReQLExp[RValue]): ReQLExp[RBool] = ???
 
     def ==[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
       new ReQLExp[RBool](Term(Protocol.Term.TermType.EQ, None, term :: x.term :: Nil))
@@ -108,7 +109,9 @@ object rexp {
     def <=[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
       new ReQLExp[RBool](Term(Protocol.Term.TermType.LE, None, term :: x.term :: Nil))
 
-    def unary_~(implicit ev: A =:= RBool): ReQLExp[RBool] = ???
+    def unary_~(implicit ev: A <:< RBool): ReQLExp[RBool] = ???
+
+    def smatch(regex: String): ReQLExp[RValue] = ???
   }
 }
 
