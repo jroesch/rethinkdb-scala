@@ -14,20 +14,6 @@ object rexp {
   trait RString extends RValue
   trait RNumber extends RValue
 
-  /** Functional Dependency/Type Witness for addition. */
-  trait ReQLExpAdd[X, Y, R]
-
-  implicit object NumberNumberAdd extends ReQLExpAdd[RNumber, RNumber, RNumber]
-  implicit object StringStringAdd extends ReQLExpAdd[RString, RString, RArray]
-  implicit object ArrayArrayAdd extends ReQLExpAdd[RArray, RArray, RArray]
-
-  /** Functional Dependency/Type Witness for multiplication. */
-  trait ReQLExpMult[X, Y, R]
-
-  implicit object ArrayNumberArrayMult extends ReQLExpMult[RArray, RNumber, RArray]
-  implicit object NumberArrayArrayMult extends ReQLExpMult[RNumber, RArray, RArray]
-  implicit object NumberNumberNumberMult extends ReQLExpMult[RNumber, RNumber, RNumber]
-
   /* Use a Polymorphic function value to build ReQL expressions. */
   object ReQLExp extends ReQLPoly {
     /** Enable the use of Scala values in ReQL expressions. */
@@ -87,16 +73,16 @@ object rexp {
       new ReQLExp[RValue](Term(Protocol.Term.TermType.GETATTR, None, term :: key.term :: Nil))
     }
 
-    def +[B <: RValue, C <: RValue](x: ReQLExp[B])(implicit fdep: ReQLExpAdd[A, B, C]): ReQLExp[C] = {
-      new ReQLExp[C](Term(Protocol.Term.TermType.ADD, None, term :: x.term :: Nil))
+    def +(x: ReQLExp[RValue]): ReQLExp[RValue] = {
+      new ReQLExp[RValue](Term(Protocol.Term.TermType.ADD, None, term :: x.term :: Nil))
     }
 
-    def -(x: ReQLExp[A])(implicit ev: A =:= RNumber): ReQLExp[RNumber] = {
-      new ReQLExp[RNumber](Term(Protocol.Term.TermType.SUB, None, term :: x.term :: Nil))
+    def -(x: ReQLExp[RValue]): ReQLExp[RValue] = {
+      new ReQLExp[RValue](Term(Protocol.Term.TermType.SUB, None, term :: x.term :: Nil))
     }
 
-    def *[B <: RValue, C <: RValue](x: ReQLExp[B])(implicit fdep: ReQLExpMult[A, B, C]): ReQLExp[C] = {
-      null
+    def *(x: ReQLExp[RValue]): ReQLExp[RValue] = {
+      new ReQLExp[RValue](Term(Protocol.Term.TermType.MUL, None, term :: x.term :: Nil))
     }
 
     def /(x: ReQLExp[A])(implicit ev: A =:= RNumber): ReQLExp[RNumber] = ???
