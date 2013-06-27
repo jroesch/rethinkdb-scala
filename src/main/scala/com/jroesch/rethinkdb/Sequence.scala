@@ -1,5 +1,9 @@
 package com.jroesch.rethinkdb
 
+import com.jroesch.rethinkdb.json._
+import com.jroesch.rethinkdb.rexp._
+import com.rethinkdb.{ QL2 => Protocol }
+
 trait Sequence extends Query { //with Selection {
   /* enable for comphrensions here */
   def map = ???
@@ -38,4 +42,34 @@ trait Sequence extends Query { //with Selection {
   def groupBy = ???
 
   def contains = ???
+
+  /* Joins */
+  type JoinF = (ReQLExp[RObject], ReQLExp[RObject]) => ReQLExp[RBool])
+
+  def innerJoin(otherSeq: Sequence, pred: JoinF): Sequence = {
+    val function = mkFunction2(pred)
+    val x = term
+    val y = otherSeq.term
+    new Sequence {
+      val term = Term(Protocol.Term.TermType.INNER_JOIN, None, List(x, y, function))
+    }
+  }
+
+  def outerJoin(other: Sequence, pred: JoinF): Sequence = {
+    val function = mkFunction2(pred)
+    val x = term
+    val y = otherSeq.term
+    new Sequence {
+      val term =  Term(Protocol.Term.TermType.OUTER_JOIN, None, List(x, y, function))
+    }
+  }
+  def eqJoin(leftAttr: String, other: Sequence, index: Option[String] = None): Sequence = {
+    val args = index match {
+      case None    => List(term, term, other.term)
+      case Some(i) => List(term, term, other.term, i)
+    }
+    new Sequence {
+      val term = Term(Protocol.Term.TermType.EQ_JOIN, None, args)
+    }
+  }
 }
