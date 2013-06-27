@@ -16,12 +16,6 @@ package object rethinkdb extends ReQLExp.DSL with QueryBuilder {
   implicit def intToJSON(i: Int): JSONNumber = JSONNumber(i)
   implicit def doubleToJSON(d: Double): JSONNumber = JSONNumber(d)
 
-  /** Function for building Objects from pairs. */
-  implicit def obj(kvs: (String, JSON)*) = JSONObject(kvs.toMap)
-
-  /** Function for building Array from values. */
-  implicit def array(values: JSON*) = JSONArray(values.toArray)
-
   implicit class JSONOps(val value: JSON) extends AnyVal {
     def fromJSON(implicit json: FromJSON[Protocol.Datum]): Protocol.Datum = json.parseJSON(value)
   }
@@ -31,6 +25,15 @@ package object rethinkdb extends ReQLExp.DSL with QueryBuilder {
     */
   object local {
     implicit val conn = new Connection("localhost", 28015, "test")
+  }
+
+  /** Exposes syntax for working with ReQL */
+  object syntax {
+    /** Function for building Objects from pairs. */
+    implicit def obj(kvs: (String, JSON)*) = JSONObject(kvs.toMap)
+
+    /** Function for building Array from values. */
+    implicit def array(values: JSON*) = JSONArray(values.toArray)
   }
 
   def dbCreate(name: String) = new Document {
@@ -53,7 +56,7 @@ package object rethinkdb extends ReQLExp.DSL with QueryBuilder {
     val term = Database(name)
   }
 
-  /* r.count, r.sum shortcuts */
+  /* Aggregators */
   def count = mkObject(Map("COUNT" -> true))
   def sum(field: String) = mkObject(Map("SUM" -> field))
   def avg(field: String) = mkObject(Map("AVG" -> field))
