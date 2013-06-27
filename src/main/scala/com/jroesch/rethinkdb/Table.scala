@@ -51,43 +51,4 @@ abstract class Table extends Query with Sequence {
       val term = Term(Protocol.Term.TermType.GET_ALL, None, outerQ :: Nil)
     }
   }
-
-  def between(lowerKey: JSON, upperKey: JSON, index: Option[String] = None) = term match {
-    case outerQ => new Document {
-      val term = null //Term(Protocol.Term.TermType.BETWEEN, )
-    }
-  }
-
-  def filter = ???
-
-  def innerJoin(
-      otherSeq: Sequence,
-      pred: (ReQLExp[RObject], ReQLExp[RObject]) => ReQLExp[RBool]): Sequence = {
-    val function = mkFunction2(pred)
-    val x = term
-    val y = otherSeq.term
-    new Sequence {
-      val term = Term(Protocol.Term.TermType.INNER_JOIN, None, List(x, y, function))
-    }
-  }
-
-  def outerJoin(
-      other: Sequence,
-      pred: (ReQLExp[RObject], ReQLExp[RObject]) => ReQLExp[RBool]): Sequence = {
-    val function = mkFunction2(pred)
-    val x = term
-    val y = otherSeq.term
-    new Sequence {
-      val term: Term =  Term(Protocol.Term.TermType.OUTER_JOIN, None, List(x, y, function))
-    }
-  }
-  def eqJoin(leftAttr: String, other: Sequence, index: Option[String] = None): Sequence = {
-    val args = index match {
-      case None    => List(term, term, other.term)
-      case Some(i) => List(term, term, other.term, i)
-    }
-    new Sequence {
-      val term = Term(Protocol.Term.TermType.EQ_JOIN, None, args)
-    }
-  }
 }
