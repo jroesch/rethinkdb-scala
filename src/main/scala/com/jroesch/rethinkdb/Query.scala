@@ -5,12 +5,14 @@ import scala.collection.JavaConversions._
 import scala.language.implicitConversions
 import scala.language.postfixOps
 import com.jroesch.rethinkdb.json._
+import com.jroesch.rethinkdb.rexp._
+import scala.reflect.runtime.universe._
 
 abstract class Query extends QueryBuilder {
   //type Result = R
   //type Info = { val dbName: Option[String] }
   //protected val info: Info
-  protected val term: Protocol.Term
+  protected[rethinkdb] val term: Protocol.Term
 
   def run[A](implicit conn: Connection): JSON = {
     val db = conn.db; /* database match {
@@ -30,9 +32,13 @@ abstract class Query extends QueryBuilder {
       case Protocol.Response.ResponseType.SUCCESS_SEQUENCE =>
         val results = response.getResponseList map { DatumToJSON.toJSON(_) }
         JSONArray(results.toArray)
-      case Protocol.Response.ResponseType.CLIENT_ERROR => ???
-      case Protocol.Response.ResponseType.COMPILE_ERROR => ???
-      case Protocol.Response.ResponseType.RUNTIME_ERROR => ???
+      case Protocol.Response.ResponseType.CLIENT_ERROR =>
+        val errorMsg = DatumToJSON.toJSON(response.getResponseList.toList.head).asInstanceOf[JSONString]
+        throw new errors.RqlCompileError(errorMsg.s)
+      case Protocol.Response.ResponseType.COMPILE_ERROR =>
+        val errorMsg = DatumToJSON.toJSON(response.getResponseList.toList.head).asInstanceOf[JSONString]
+        throw new errors.RqlCompileError(errorMsg.s)
+      case Protocol.Response.ResponseType.RUNTIME_ERROR =>
         val errorMsg = DatumToJSON.toJSON(response.getResponseList.toList.head).asInstanceOf[JSONString]
         throw new errors.RqlRuntimeError(errorMsg.s)
       case _ => { println(response); error("not yet supported") }
@@ -83,6 +89,25 @@ trait QueryBuilder {
     _query.addAllGlobalOptargs(asJavaIterable(optargs.toIterable))
     _query.build
   }
+
+  def mkFunction(arity: Int, body: ReQLExp[_]) = {
+    val paramNumbers = new Array[JSON](arity)
+    for (i <- 1 to arity) { paramNumbers(i - 1) = i }
+    val params = mkArray(paramNumbers)
+    Term(Protocol.Term.TermType.FUNC, None, List(params, body.term))
+  }
+
+  def mkFunction1 = ???
+
+  def mkFunction2[A <: RValue, B <: RValue, C <: RValue](f: (ReQLExp[A], ReQLExp[B]) => ReQLExp[C])
+                /* (implicit aTag: TypeTag[A], bTag: TypeTag[B], cTag: TypeTag[C]) */ = {
+    val x = new ReQLExp[A](mkVar(1))
+    val y = new ReQLExp[B](mkVar(2))
+    mkFunction(2, f(x, y))
+  }
+
+  def mkVar(number: JSONNumber) =
+    Term(Protocol.Term.TermType.VAR, None, DatumTerm(number) :: Nil)
 
   def mkObject(pairs: Map[String, JSON]): Protocol.Term = {
     val term = Protocol.Term.newBuilder()
