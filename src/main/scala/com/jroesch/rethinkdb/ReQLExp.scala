@@ -5,7 +5,7 @@ import com.jroesch.rethinkdb.json._
 import shapeless._
 import scala.language.implicitConversions
 
-package object rexp {
+object rexp {
   /** Phantom types for our expression language. */
   trait RValue
   trait RObject extends RValue
@@ -38,6 +38,10 @@ package object rexp {
         ReQLExp(d)(caseDouble)
       implicit def stringToReQLExp(s: String): ReQLExp[RString] =
         ReQLExp(s)(caseString)
+      implicit def arrayToReQLExp(arr: Array[JSON]): ReQLExp[RArray] =
+        ReQLExp(arr)(caseArray)
+      implicit def arrayToReQLExp(arr: JSONArray): ReQLExp[RArray] =
+        ReQLExp(arr)(caseJSONArray)
     }
   }
 
@@ -46,8 +50,8 @@ package object rexp {
     /* null values ? */
 
     /* Booleans */
-    implicit def caseBoolean = at[Boolean](b => ???)
-    implicit def caseJSONBool = at[JSONBool](b => ???)
+    implicit def caseBoolean = at[Boolean](b => new ReQLExp[RBool](DatumTerm(b)))
+    //implicit def caseJSONBool = at[JSONBool](b => ???)
 
     /* Numbers */
     implicit def caseInt =
@@ -66,8 +70,11 @@ package object rexp {
     implicit def caseJSONString = at[JSONString](s => ???)
 
     /* Array */
-    implicit def caseArray = at[Array[JSON]](arr => ???)
-    implicit def caseJSONArray = at[JSONArray](arr => ???)
+    implicit def caseArray =
+      at[Array[JSON]](arr => new ReQLExp[RArray](mkArray(arr)))
+    implicit def caseJSONArray = at[JSONArray](arr => arr match {
+      case JSONArray(seq) => new ReQLExp[RArray](mkArray(seq))
+    })
 
     /* Object */
     implicit def caseJSONObject = at[JSONObject](obj => ???)
@@ -75,6 +82,10 @@ package object rexp {
 
   /** A expression language for building first class functions for ReQL queries. */
   class ReQLExp[A <: RValue](val term: Protocol.Term) extends Query {
+
+    def apply(key: ReQLExp[RString])(implicit ev: A =:= RObject): ReQLExp[RValue] = {
+      new ReQLExp[RValue](Term(Protocol.Term.TermType.GETATTR, None, term :: key.term :: Nil))
+    }
 
     def +[B <: RValue, C <: RValue](x: ReQLExp[B])(implicit fdep: ReQLExpAdd[A, B, C]): ReQLExp[C] = {
       new ReQLExp[C](Term(Protocol.Term.TermType.ADD, None, term :: x.term :: Nil))
@@ -92,11 +103,25 @@ package object rexp {
     def %(x: ReQLExp[A])(implicit ev: A =:= RNumber): ReQLExp[RNumber] = ???
     def &(x: ReQLExp[A])(implicit ev: A =:= RBool): ReQLExp[RBool] = ???
     def |(x: ReQLExp[A])(implicit ev: A =:= RBool): ReQLExp[RBool] = ???
-    def ==[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] = ???
-    def !=[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] = ???
-    def >[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] = ???
-    def <[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] = ???
-    def <=[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] = ???
+
+    def ==[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
+      new ReQLExp[RBool](Term(Protocol.Term.TermType.EQ, None, term :: x.term :: Nil))
+
+    def !=[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
+      new ReQLExp[RBool](Term(Protocol.Term.TermType.NE, None, term :: x.term :: Nil))
+
+    def >[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
+      new ReQLExp[RBool](Term(Protocol.Term.TermType.GT, None, term :: x.term :: Nil))
+
+    def >=[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
+      new ReQLExp[RBool](Term(Protocol.Term.TermType.GE, None, term :: x.term :: Nil))
+
+    def <[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
+      new ReQLExp[RBool](Term(Protocol.Term.TermType.LT, None, term :: x.term :: Nil))
+
+    def <=[B <: RValue](x: ReQLExp[B]): ReQLExp[RBool] =
+      new ReQLExp[RBool](Term(Protocol.Term.TermType.LE, None, term :: x.term :: Nil))
+
     def unary_~(implicit ev: A =:= RBool): ReQLExp[RBool] = ???
   }
 }
