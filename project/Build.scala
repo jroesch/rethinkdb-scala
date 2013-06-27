@@ -35,7 +35,7 @@ object RethinkDBBuild extends Build {
         "com.chuusai" % "shapeless" % "2.0.0-SNAPSHOT" cross CrossVersion.full,
         "org.scalaz" %% "scalaz-core" % "7.0.0",
         "com.google.protobuf" % "protobuf-java" % "2.5.0",
-        "org.specs2" %% "specs2" % "2.0-RC2" % "test"
+        "org.specs2" %% "specs2" % "2.0" % "test"
       )
     )
   )
