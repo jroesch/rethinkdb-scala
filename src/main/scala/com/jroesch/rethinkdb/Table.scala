@@ -3,7 +3,6 @@ package com.jroesch.rethinkdb
 import json._
 import com.rethinkdb.{ QL2 => Protocol }
 import rexp._
-import com.rethinkdb.QL2.Term
 
 abstract class Table extends Query with Sequence {
   def indexCreate(index: String) = term match {
@@ -13,7 +12,7 @@ abstract class Table extends Query with Sequence {
       }
   }
 
-  def indexDrop(index: JSONString) = term match {
+  def indexDrop(index: String) = term match {
     case outerQ =>
       new Document {
         val term = Term(Protocol.Term.TermType.INDEX_DROP, None, List(outerQ, Datum(index)))
