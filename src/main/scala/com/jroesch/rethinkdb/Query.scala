@@ -90,14 +90,17 @@ trait QueryBuilder {
     _query.build
   }
 
-  def mkFunction(arity: Int, body: ReQLExp[_]) = {
+  def mkFunction(arity: Int, body: ReQLExp[_]): Protocol.Term = {
     val paramNumbers = new Array[JSON](arity)
     for (i <- 1 to arity) { paramNumbers(i - 1) = i }
     val params = mkArray(paramNumbers)
     Term(Protocol.Term.TermType.FUNC, None, List(params, body.term))
   }
 
-  def mkFunction1 = ???
+  def mkFunction1[A <: RValue, B <: RValue](f: ReQLExp[A] => ReQLExp[B]) = {
+    val x = new ReQLExp[A](mkVar(1))
+    mkFunction(1, f(x))
+  }
 
   def mkFunction2[A <: RValue, B <: RValue, C <: RValue](f: (ReQLExp[A], ReQLExp[B]) => ReQLExp[C])
                 /* (implicit aTag: TypeTag[A], bTag: TypeTag[B], cTag: TypeTag[C]) */ = {
