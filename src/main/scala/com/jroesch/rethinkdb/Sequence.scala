@@ -44,12 +44,12 @@ trait Sequence extends Query { //with Selection {
   def contains = ???
 
   /* Joins */
-  type JoinF = (ReQLExp[RObject], ReQLExp[RObject]) => ReQLExp[RBool])
+  type JoinF = (ReQLExp[RObject], ReQLExp[RObject]) => ReQLExp[RBool]
 
-  def innerJoin(otherSeq: Sequence, pred: JoinF): Sequence = {
+  def innerJoin(other: Sequence, pred: JoinF): Sequence = {
     val function = mkFunction2(pred)
     val x = term
-    val y = otherSeq.term
+    val y = other.term
     new Sequence {
       val term = Term(Protocol.Term.TermType.INNER_JOIN, None, List(x, y, function))
     }
@@ -58,7 +58,7 @@ trait Sequence extends Query { //with Selection {
   def outerJoin(other: Sequence, pred: JoinF): Sequence = {
     val function = mkFunction2(pred)
     val x = term
-    val y = otherSeq.term
+    val y = other.term
     new Sequence {
       val term =  Term(Protocol.Term.TermType.OUTER_JOIN, None, List(x, y, function))
     }
@@ -66,7 +66,7 @@ trait Sequence extends Query { //with Selection {
   def eqJoin(leftAttr: String, other: Sequence, index: Option[String] = None): Sequence = {
     val args = index match {
       case None    => List(term, term, other.term)
-      case Some(i) => List(term, term, other.term, i)
+      case Some(i) => List(term, term, other.term, DatumTerm(i))
     }
     new Sequence {
       val term = Term(Protocol.Term.TermType.EQ_JOIN, None, args)
