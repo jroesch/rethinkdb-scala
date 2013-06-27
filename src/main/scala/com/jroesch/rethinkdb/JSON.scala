@@ -4,6 +4,7 @@ import scala.util.parsing.combinator._
 import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.json.Lexer
 import shapeless._
+import scala.annotation.tailrec
 
 /** A type representing a JSON value. */
 sealed abstract class JSON
@@ -24,13 +25,42 @@ case class JSONString(s: String) extends JSON {
   override def toString = s.mkString("\"", "", "\"")
 }
 
-case class JSONArray(toArray: Array[JSON]) extends JSON {
-  override def toString = (toArray map (_.toString)).mkString("[", ", ", "]")
-}
+trait JSONPrettyPrinter { self: JSON =>
+  override def toString = {
+    var indent = 0
 
-case class JSONObject(toMap: Map[String, JSON]) extends JSON {
-  override def toString = (toMap map { case (k,v) => s"$k: $v" }).mkString("{ ", ", ", " }")
+    val builder = new StringBuilder
+
+    //@tailrec make this true
+    //this needs some work
+    def pprint(x: JSON, sb: StringBuilder): Unit = x match {
+      case JSONObject(toMap) =>
+        sb ++= "{\n"
+        indent += 1
+        for ((k, v) <- toMap) {
+          sb ++= "  " * indent + k.toString + ": "
+          pprint(v, sb)
+          sb ++= ",\n"
+        }
+        indent -= 1
+        sb ++= "  " * indent + "}"
+      case JSONArray(array) =>
+        sb ++= "  " * indent + "[\n"
+        indent += 1
+        for (each <- array)
+          pprint(each, sb)
+        indent -= 1
+        sb ++= "  " * indent + "\n]"
+      case other => sb ++= other.toString
+    }
+
+    pprint(this, builder)
+    builder.toString
+  }
 }
+case class JSONArray(toArray: Array[JSON]) extends JSON with JSONPrettyPrinter
+
+case class JSONObject(toMap: Map[String, JSON]) extends JSON with JSONPrettyPrinter
 
 /** A parser for converting from JSON in string form to the JSON value type */
 object JSON extends StdTokenParsers with ImplicitConversions {
